@@ -10,6 +10,8 @@ urlpatterns = [
     path('login/', views.login_request, name='login'),
     path('logout/', views.logout_request, name='logout'),
     
+    path('noc/', views.noc, name='noc'),
+    
     path('TPO_app/', views.register_student, name= "register_student"),
     path('register_job/', views.register_job, name= "register_job"),
     path('register_student_submit/', views.register_student_submit, name= "register_student_submit"),
@@ -20,6 +22,7 @@ urlpatterns = [
     path('add_company/', views.add_company, name= "add_company"),
     path('add_company_submit/', views.add_company_submit, name= "add_company_submit"),
     path('Statistics/', views.Statistics, name= "Statistics"),
+    path('api/noc/', views.noc_api, name='noc_api'),
     
-    
+
 ]

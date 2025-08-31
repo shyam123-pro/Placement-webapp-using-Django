@@ -133,6 +133,85 @@ def Statistics(request):
 #     companyname = request.POST["companyname"]
 #     medicine = request.POST["medicine"]
 #     quantity = request.POST["quantity"]
-#     Supplier_Info = StudentInfo(medicine=medicine, quantity=quantity, companyname=companyname)
-#     Supplier_Info.save()
-#     return render(request, "supplier/home_supply.html")
+#  # views.py
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from .models import NOCRequest
+from .serializers import NOCRequestSerializer
+from django.shortcuts import render
+
+# Function-based view (HTML Page)
+@csrf_exempt
+def noc(request):
+    return render(request, 'includes/noc.html')
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import status
+from .models import NOCRequest
+from .serializers import NOCRequestSerializer
+import json
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils.timezone import localtime
+from django.core.serializers import serialize
+from .models import NOCRequest
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def noc_api(request):
+    if request.method == "GET":
+        records = NOCRequest.objects.all().order_by('-timestamp')
+        data = []
+        for rec in records:
+            data.append({
+                "name": rec.name,
+                "roll": rec.roll,
+                "branch": rec.branch,
+                "purpose": rec.purpose,
+                "message": rec.message,
+                "document": rec.document.url if rec.document else "",
+                "timestamp": localtime(rec.timestamp).isoformat(),
+                "status": rec.status
+            })
+        return JsonResponse(data, safe=False)
+
+    elif request.method == "POST":
+        name = request.POST.get("name")
+        roll = request.POST.get("roll")
+        branch = request.POST.get("branch")
+        purpose = request.POST.get("purpose")
+        message = request.POST.get("message", "")
+        document = request.FILES.get("document")
+
+        if not all([name, roll, branch, purpose, document]):
+            return JsonResponse({"error": "Missing required fields."}, status=400)
+
+        rec = NOCRequest.objects.create(
+            name=name,
+            roll=roll,
+            branch=branch,
+            purpose=purpose,
+            message=message,
+            document=document
+        )
+
+        return JsonResponse({
+            "name": rec.name,
+            "purpose": rec.purpose,
+            "document": rec.document.url,
+            "timestamp": localtime(rec.timestamp).isoformat(),
+            "status": rec.status
+        }, status=201)
+
+    return HttpResponseNotAllowed(['GET', 'POST'])

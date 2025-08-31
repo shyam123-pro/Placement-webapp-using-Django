@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NOC Request | Placement Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center py-10">
+
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl">
+    <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">NOC Request Form</h1>
+
+    <!-- Form Start -->
+    <form id="nocForm" class="space-y-4" enctype="multipart/form-data">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="font-semibold block mb-1">Student Name</label>
+          <input type="text" name="name" required class="w-full border px-4 py-2 rounded-lg" />
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Roll Number</label>
+          <input type="text" name="roll" required class="w-full border px-4 py-2 rounded-lg" />
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Branch</label>
+          <input type="text" name="branch" required class="w-full border px-4 py-2 rounded-lg" />
+        </div>
+        <div>
+          <label class="font-semibold block mb-1">Purpose</label>
+          <select name="purpose" required class="w-full border px-4 py-2 rounded-lg">
+            <option value="">Select</option>
+            <option value="Internship">Internship</option>
+            <option value="Placement">Placement</option>
+            <option value="Higher Studies">Higher Studies</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Additional Info -->
+      <div>
+        <label class="font-semibold block mb-1">Additional Info</label>
+        <textarea name="message" rows="2" placeholder="Optional details..." class="w-full border px-4 py-2 rounded-lg"></textarea>
+      </div>
+
+      <!-- File Upload -->
+      <div>
+        <label class="font-semibold block mb-1">Upload Supporting Document (PDF, DOCX)</label>
+        <input type="file" name="document" accept=".pdf,.doc,.docx" required class="w-full px-4 py-2 border rounded-lg bg-white" />
+      </div>
+
+      <!-- Submit -->
+      <div class="text-center pt-4">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold shadow-lg">
+          Submit NOC Request
+        </button>
+      </div>
+    </form>
+
+    <!-- Confirmation -->
+    <div id="confirmation" class="text-green-600 mt-4 hidden text-center font-semibold">
+      ✅ Request submitted successfully!
+    </div>
+  </div>
+
+  <!-- NOC Requests Table -->
+  <div class="mt-10 w-full max-w-4xl bg-white rounded-xl shadow-xl p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-700">Submitted NOC Requests</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full table-auto text-sm text-left">
+        <thead class="bg-blue-600 text-white">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Purpose</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Date & Time</th>
+            <th class="px-4 py-2">Proof</th>
+          </tr>
+        </thead>
+        <tbody id="nocList" class="text-gray-700 bg-gray-50">
+          <!-- Dynamic content -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+ const nocForm = document.getElementById("nocForm");
+const nocList = document.getElementById("nocList");
+const confirmation = document.getElementById("confirmation");
+
+let nocRecords = [];
+
+document.addEventListener("DOMContentLoaded", fetchNOCRequests);
+
+async function fetchNOCRequests() {
+  try {
+    const response = await fetch("/api/noc/");
+    if (response.ok) {
+      const data = await response.json();
+      // Map backend fields to frontend display
+      nocRecords = data.map(item => ({
+        name: item.name,
+        purpose: item.purpose,
+        fileName: item.document?.split("/").pop() || "Uploaded File",
+        status: item.status || "Pending",
+        time: new Date(item.timestamp).toLocaleString(),
+        documentUrl: item.document,
+      }));
+      updateTable();
+    } else {
+      console.error("Failed to fetch NOC requests");
+    }
+  } catch (err) {
+    console.error("Error fetching NOC data:", err);
+  }
+}
+
+nocForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(nocForm);
+
+  try {
+    const response = await fetch("/api/noc/", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      nocRecords.unshift({
+        name: result.name,
+        purpose: result.purpose,
+        fileName: result.document?.split("/").pop() || "Uploaded File",
+        status: result.status || "Pending",
+        time: new Date(result.timestamp).toLocaleString(),
+        documentUrl: result.document,
+      });
+
+      updateTable();
+      nocForm.reset();
+      confirmation.classList.remove("hidden");
+      setTimeout(() => confirmation.classList.add("hidden"), 4000);
+    } else {
+      alert("Failed to submit. Try again.");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Something went wrong.");
+  }
+});
+
+function updateTable() {
+  nocList.innerHTML = "";
+  nocRecords.forEach((rec) => {
+    nocList.innerHTML += `
+      <tr class="border-t">
+        <td class="px-4 py-2">${rec.name}</td>
+        <td class="px-4 py-2">${rec.purpose}</td>
+        <td class="px-4 py-2">
+          <span class="inline-block px-2 py-1 rounded-full text-xs ${rec.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800'}">${rec.status}</span>
+        </td>
+        <td class="px-4 py-2">${rec.time}</td>
+        <td class="px-4 py-2">
+          <a href="${rec.documentUrl}" target="_blank" class="text-blue-600 underline">View</a>
+        </td>
+      </tr>`;
+  });
+}
+  </script>
+</body>
+</html>
